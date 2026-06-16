@@ -1,0 +1,35 @@
+name: worker-pool
+
+services:
+  worker-pool:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: worker-pool
+    restart: unless-stopped
+    ports:
+      - "3501:3501"
+    volumes:
+      - ./data:/data
+      - ./data/ssh:/root/.ssh:ro
+      - /mnt/nas:/mnt/nas:ro
+    env_file:
+      - /home/sofian/data/secrets/do-api.env
+    environment:
+      - DB_PATH=/data/worker-pool.db
+      - MAC_SSH_HOST=100.66.240.74
+      - MAC_SSH_USER=sofian
+      - MAC_SSH_KEY=/root/.ssh/id_ed25519
+      - FFMPEG_PATH=/opt/homebrew/bin/ffmpeg
+      - CLOUD_PROVIDER=digitalocean
+      - CLOUD_BUCKET=sofian-media-bridge
+      - DISCORD_WEBHOOK=https://discord.com/api/webhooks/1509373138482499687/PgBj2mmAygMnei8Tdoo0N7oonT3QmIxSd_RsclEG_NykWgFB1Hiu9Z6OzHaT4tH2JiyV
+    labels:
+      caddy: http://worker-pool.sofian.lab
+      caddy.reverse_proxy: "{{upstreams 3501}}"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

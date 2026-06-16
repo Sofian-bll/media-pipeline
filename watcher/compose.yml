@@ -1,0 +1,22 @@
+name: watcher
+
+services:
+  watcher:
+    build: .
+    container_name: watcher
+    restart: unless-stopped
+    volumes:
+      - /mnt/nas/incoming:/watch_dir:ro
+      - ./data:/data
+    environment:
+      - WATCH_DIR=/watch_dir
+      - SEEN_FILE=/data/seen.txt
+      - POLL_INTERVAL=30
+      - WATCH_EXTENSIONS=mkv,avi,mp4
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/watcher
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

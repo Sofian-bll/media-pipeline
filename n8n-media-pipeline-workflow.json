@@ -1,0 +1,95 @@
+{
+  "name": "Media Pipeline - Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "watcher",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "watcher-webhook",
+      "name": "Watcher Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://worker-pool:3501/jobs/transcode",
+        "method": "POST",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file_path",
+              "value": "={{ $json.body.data.path }}"
+            },
+            {
+              "name": "priority",
+              "value": "normal"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-worker-pool",
+      "name": "Call Worker Pool",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "worker-callback",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "worker-callback-webhook",
+      "name": "Worker Callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 500]
+    },
+    {
+      "parameters": {
+        "webhookUri": "={{ $env.DISCORD_WEBHOOK }}",
+        "text": "={{ $json.body.event === 'job.completed' ? '✅ Transcodage terminé' : '❌ ' + $json.body.data.code }}"
+      },
+      "id": "discord-notify",
+      "name": "Discord Notification",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 1,
+      "position": [450, 500]
+    }
+  ],
+  "connections": {
+    "Watcher Webhook": {
+      "main": [
+        [
+          {
+            "node": "Call Worker Pool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Worker Callback": {
+      "main": [
+        [
+          {
+            "node": "Discord Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
