@@ -105,16 +105,11 @@ cd media-pipeline
 ### 2. Configurer l'environnement
 
 ```bash
-# Copier le fichier d'exemple et remplir vos valeurs
-cp .env.example .env
-# Éditer .env — définir DISCORD_WEBHOOK et ajuster les chemins si besoin
-```
-
-Le Worker Pool lit les secrets depuis `DO_ENV_FILE` (défaut : `/home/sofian/data/secrets/do-api.env`). Créez-le si vous utilisez le fallback cloud DigitalOcean :
-
-```bash
+# Créer le fichier de secrets pour l'API DO
 echo "DO_TOKEN=dop_v1_..." > /home/sofian/data/secrets/do-api.env
 ```
+
+Le Worker Pool lit `/home/sofian/data/secrets/do-api.env`. Ajustez le chemin dans `worker-pool/compose.yml` si nécessaire.
 
 ### 3. Configurer la clé SSH pour le Mac worker
 
@@ -127,8 +122,11 @@ chmod 600 worker-pool/data/ssh/id_ed25519
 ### 4. Démarrer les services
 
 ```bash
-# Une seule commande pour lancer le Watcher et le Worker Pool
-docker compose up -d
+# Watcher (surveille le NAS)
+docker compose -f watcher/compose.yml up -d
+
+# Worker Pool API (gère les jobs de transcodage)
+docker compose -f worker-pool/compose.yml up -d
 ```
 
 ### 5. Importer le workflow n8n
@@ -186,8 +184,6 @@ media-pipeline/
 │   └── n8n-media-pipeline-workflow.json   # Workflow orchestrateur n8n
 ├── scripts/
 │   └── cleanup.sh                         # Nettoie les anciens fichiers du dossier entrant
-├── docker-compose.yml                     # Compose unifié (les deux services)
-├── .env.example                           # Template des variables d'environnement
 ├── watcher/
 │   ├── scripts/
 │   │   ├── health.sh                      # Endpoint santé HTTP (port 8080)

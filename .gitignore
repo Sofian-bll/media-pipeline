@@ -3,6 +3,3 @@ dist/
 .env
 *.log
 .DS_Store
-watcher/data/
-worker-pool/data/
-worker-pool/data/ssh/
