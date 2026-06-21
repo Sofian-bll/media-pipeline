@@ -1,0 +1,49 @@
+name: media-pipeline
+
+services:
+  watcher:
+    build: ./watcher
+    container_name: watcher
+    restart: unless-stopped
+    volumes:
+      - /mnt/nas/incoming:/watch_dir:ro
+      - ./watcher/data:/data
+    environment:
+      - WATCH_DIR=/watch_dir
+      - SEEN_FILE=/data/seen.txt
+      - POLL_INTERVAL=${WATCH_POLL_INTERVAL:-30}
+      - WATCH_EXTENSIONS=${WATCH_EXTENSIONS:-mkv,avi,mp4}
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/watcher}
+    networks:
+      - proxy
+
+  worker-pool:
+    build: ./worker-pool
+    container_name: worker-pool
+    restart: unless-stopped
+    ports:
+      - "3501:3501"
+    volumes:
+      - ./worker-pool/data:/data
+      - ${SSH_KEY_PATH:-~/.ssh/id_ed25519}:/root/.ssh/id_ed25519:ro
+      - /mnt/nas:/mnt/nas:ro
+    env_file:
+      - ${DO_ENV_FILE:-/home/sofian/data/secrets/do-api.env}
+    environment:
+      - DB_PATH=/data/worker-pool.db
+      - MAC_SSH_HOST=${MAC_SSH_HOST:-100.66.240.74}
+      - MAC_SSH_USER=${MAC_SSH_USER:-sofian}
+      - MAC_SSH_KEY=/root/.ssh/id_ed25519
+      - FFMPEG_PATH=${FFMPEG_PATH:-/opt/homebrew/bin/ffmpeg}
+      - CLOUD_PROVIDER=${CLOUD_PROVIDER:-digitalocean}
+      - CLOUD_BUCKET=${CLOUD_BUCKET:-sofian-media-bridge}
+      - DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
+    labels:
+      caddy: http://worker-pool.sofian.lab
+      caddy.reverse_proxy: "{{upstreams 3501}}"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
